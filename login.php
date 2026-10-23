@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div class="demo-info">
-            Akun Default: Username <code>admin</code> &bull; Password <code>admin123</code>
+            Akun Default: Username <code>-</code> &bull; Password <code>-</code>
         </div>
     </div>
 </body>
