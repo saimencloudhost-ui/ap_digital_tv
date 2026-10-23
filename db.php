@@ -19,12 +19,23 @@ class Database
     public function __construct()
     {
         // Mendukung Environment Variables untuk deployment di Coolify / Docker,
-        // dengan fallback otomatis ke konfigurasi lokal XAMPP
-        $this->host     = getenv('DB_HOST') ?: '127.0.0.1';
-        $this->port     = getenv('DB_PORT') ?: '3306';
-        $this->dbName   = getenv('DB_NAME') ?: 'ap_digital_tv';
-        $this->username = getenv('DB_USER') ?: 'root';
-        $this->password = getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : '';
+        // termasuk dukungan format URL langsung (DATABASE_URL / MYSQL_URL) dari Coolify
+        $dbUrl = getenv('DATABASE_URL') ?: getenv('MYSQL_URL') ?: '';
+        if ($dbUrl !== '' && strpos($dbUrl, 'mysql://') === 0) {
+            $parsed = parse_url($dbUrl);
+            $this->host     = $parsed['host'] ?? '127.0.0.1';
+            $this->port     = isset($parsed['port']) ? (string) $parsed['port'] : '3306';
+            $this->username = isset($parsed['user']) ? urldecode($parsed['user']) : 'root';
+            $this->password = isset($parsed['pass']) ? urldecode($parsed['pass']) : '';
+            $this->dbName   = isset($parsed['path']) ? ltrim($parsed['path'], '/') : 'ap_digital_tv';
+        } else {
+            // Mengambil dari Environment Variables Coolify, atau fallback ke lokal jika kosong
+            $this->host     = getenv('DB_HOST') ?: '127.0.0.1';
+            $this->port     = getenv('DB_PORT') ?: '3306';
+            $this->dbName   = getenv('DB_NAME') ?: 'ap_digital_tv';
+            $this->username = getenv('DB_USER') ?: 'root';
+            $this->password = getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : '';
+        }
     }
 
     public function getConnection(): PDO
@@ -33,9 +44,9 @@ class Database
             $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->dbName};charset={$this->charset}";
 
             $options = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Gunakan exception untuk error handling
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // Return array asosiatif secara default
-                PDO::ATTR_EMULATE_PREPARES   => false,                  // Gunakan native prepared statements (aman dari SQL Injection)
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
             ];
 
             try {
@@ -43,7 +54,24 @@ class Database
                 $this->ensureCoreTablesExist();
                 $this->ensureScheduleColumnsExist();
             } catch (PDOException $e) {
-                // Jangan tampilkan detail kredensial di production, cukup log di sisi server
+                // Jika database belum ada (Error 1049: Unknown database), buat database secara otomatis
+                if ((int) $e->getCode() === 1049 || strpos($e->getMessage(), '1049') !== false) {
+                    try {
+                        $rootDsn = "mysql:host={$this->host};port={$this->port};charset={$this->charset}";
+                        $tempPdo = new PDO($rootDsn, $this->username, $this->password, $options);
+                        $safeDbName = preg_replace('/[^a-zA-Z0-9_]/', '', $this->dbName);
+                        $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$safeDbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                        $tempPdo = null;
+
+                        $this->pdo = new PDO($dsn, $this->username, $this->password, $options);
+                        $this->ensureCoreTablesExist();
+                        $this->ensureScheduleColumnsExist();
+                        return $this->pdo;
+                    } catch (PDOException $innerEx) {
+                        $e = $innerEx;
+                    }
+                }
+
                 error_log('Database Connection Error: ' . $e->getMessage());
                 http_response_code(500);
                 header('Content-Type: application/json; charset=utf-8');
