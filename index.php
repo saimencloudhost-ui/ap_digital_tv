@@ -868,6 +868,198 @@ $playlists = $db->query("
             color: var(--muted);
             font-style: italic;
         }
+
+        /* Navbar Dynamic Player Picker */
+        .navbar-player-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border);
+            padding: 4px 6px;
+            border-radius: 8px;
+        }
+        .navbar-player-group .sselect-wrapper {
+            min-width: 215px;
+        }
+        .navbar-player-group .sselect-trigger {
+            height: 34px;
+            padding: 5px 28px 5px 10px;
+            font-size: 0.83rem;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        /* Custom Searchable Dropdown (Dropdown Search) */
+        .sselect-native-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            border: 0 !important;
+            pointer-events: none !important;
+        }
+        .sselect-wrapper {
+            position: relative;
+            width: 100%;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .toolbar-filters .sselect-wrapper {
+            width: auto;
+            min-width: 150px;
+        }
+        .toolbar-filters .sselect-wrapper.sselect-limit {
+            min-width: 105px;
+        }
+        td .sselect-wrapper {
+            width: auto;
+            min-width: 120px;
+        }
+        .sselect-trigger {
+            width: 100%;
+            min-height: 39px;
+            padding: 8px 32px 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #0f172a;
+            color: var(--text);
+            font-size: 0.9rem;
+            text-align: left;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .toolbar-filters .sselect-trigger {
+            min-height: 36px;
+            height: 36px;
+            padding: 6px 28px 6px 10px;
+            font-size: 0.84rem;
+        }
+        td .sselect-trigger {
+            min-height: 30px;
+            padding: 4px 26px 4px 9px;
+            font-size: 0.8rem;
+        }
+        .sselect-trigger:hover,
+        .sselect-wrapper.open .sselect-trigger {
+            border-color: #38bdf8;
+        }
+        .sselect-wrapper.open .sselect-trigger {
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.18);
+        }
+        .sselect-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+            width: 100%;
+        }
+        .sselect-arrow {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
+            transition: transform 0.18s ease;
+        }
+        .sselect-wrapper.open .sselect-arrow {
+            transform: translateY(-50%) rotate(180deg);
+            color: #38bdf8;
+        }
+        .sselect-menu {
+            position: absolute;
+            top: calc(100% + 5px);
+            left: 0;
+            min-width: 100%;
+            width: max-content;
+            max-width: 380px;
+            background: #0f172a;
+            border: 1px solid #38bdf8;
+            border-radius: 8px;
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.65);
+            z-index: 1200;
+            display: none;
+            overflow: hidden;
+        }
+        .navbar-player-group .sselect-menu,
+        .toolbar-filters .sselect-menu {
+            right: 0;
+            left: auto;
+        }
+        .sselect-wrapper.open .sselect-menu {
+            display: block;
+        }
+        .sselect-search-wrap {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            background: #1e293b;
+            position: relative;
+        }
+        .sselect-search-wrap svg {
+            position: absolute;
+            left: 17px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
+        }
+        .sselect-search-input {
+            width: 100% !important;
+            height: 32px !important;
+            padding: 5px 10px 5px 30px !important;
+            font-size: 0.82rem !important;
+            border-radius: 5px !important;
+            border: 1px solid var(--border) !important;
+            background: #0f172a !important;
+            color: var(--text) !important;
+            outline: none !important;
+        }
+        .sselect-search-input:focus {
+            border-color: #38bdf8 !important;
+        }
+        .sselect-options {
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .sselect-option {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.1s ease;
+            white-space: normal;
+            line-height: 1.35;
+        }
+        .sselect-option:hover,
+        .sselect-option.highlighted {
+            background: rgba(56, 189, 248, 0.16);
+            color: #38bdf8;
+        }
+        .sselect-option.selected {
+            background: rgba(59, 130, 246, 0.25);
+            color: #fff;
+            font-weight: 600;
+        }
+        .sselect-empty {
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-align: center;
+            font-style: italic;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -889,12 +1081,35 @@ $playlists = $db->query("
             </li>
         </ul>
 
+        <?php
+        $defaultPlayerCode = !empty($devices) ? (string) $devices[0]['device_code'] : 'TV-LOBBY-01';
+        ?>
         <div class="navbar-actions">
             <span style="font-size:0.85rem; color:var(--muted); margin-right:4px;">
                 Halo, <strong style="color:#fff;"><?= htmlspecialchars($_SESSION['admin_name'] ?? 'Admin', ENT_QUOTES, 'UTF-8') ?></strong>
             </span>
-            <a href="player.php?code=TV-LOBBY-01" target="_blank" class="btn btn-primary">Buka Player (TV-LOBBY-01)</a>
-            <a href="api.php?code=TV-LOBBY-01" target="_blank" class="btn btn-outline">JSON API</a>
+
+            <!-- Pilihan Perangkat TV Dinamis untuk Buka Player & JSON API -->
+            <div class="navbar-player-group">
+                <select id="navbar-device-select" onchange="updateNavbarPlayerLinks()" title="Pilih Perangkat TV yang ingin dibuka">
+                    <?php if (!empty($devices)): ?>
+                        <?php foreach ($devices as $d): ?>
+                            <option value="<?= htmlspecialchars($d['device_code'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars($d['device_name']) ?> (<?= htmlspecialchars($d['device_code']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <option value="TV-LOBBY-01">TV-LOBBY-01 (Default)</option>
+                    <?php endif; ?>
+                </select>
+                <a href="player.php?code=<?= urlencode($defaultPlayerCode) ?>" id="btn-navbar-player" target="_blank" class="btn btn-primary" style="padding:7px 13px; font-size:0.82rem; white-space:nowrap;">
+                    ▶ Buka Player
+                </a>
+                <a href="api.php?code=<?= urlencode($defaultPlayerCode) ?>" id="btn-navbar-api" target="_blank" class="btn btn-outline" style="padding:7px 10px; font-size:0.8rem; white-space:nowrap;">
+                    JSON API
+                </a>
+            </div>
+
             <a href="logout.php" class="btn btn-danger" onclick="return confirm('Keluar dari sesi Admin?');">Logout</a>
         </div>
     </div>
@@ -1393,12 +1608,27 @@ $playlists = $db->query("
 
         if (videoExts.includes(ext)) {
             mediaTypeSelect.value = 'video';
+            if (mediaTypeSelect._refreshSearchable) mediaTypeSelect._refreshSearchable();
             handleMediaTypeChange();
             detectVideoDurationFromFile(file);
         } else if (imageExts.includes(ext)) {
             mediaTypeSelect.value = 'image';
+            if (mediaTypeSelect._refreshSearchable) mediaTypeSelect._refreshSearchable();
             handleMediaTypeChange();
         }
+    }
+
+    // Perbarui link tombol Buka Player & JSON API di Navbar sesuai perangkat TV yang dipilih
+    function updateNavbarPlayerLinks() {
+        const navSelect = document.getElementById('navbar-device-select');
+        const btnPlayer = document.getElementById('btn-navbar-player');
+        const btnApi = document.getElementById('btn-navbar-api');
+        if (!navSelect || !btnPlayer || !btnApi) return;
+
+        const code = navSelect.value || 'TV-LOBBY-01';
+        btnPlayer.href = 'player.php?code=' + encodeURIComponent(code);
+        btnApi.href = 'api.php?code=' + encodeURIComponent(code);
+        sessionStorage.setItem('ap_navbar_device_code', code);
     }
 
     // Membaca durasi asli file video secara otomatis menggunakan HTML5 Video Metadata
@@ -1435,7 +1665,10 @@ $playlists = $db->query("
 
     // Reset field jadwal tayang ke 24 jam (kosongkan semua field tanggal & jam)
     function clearScheduleFields() {
-        const fields = ['sched-start-date', 'sched-end-date', 'sched-start-time', 'sched-end-time'];
+        const fields = [
+            'sched_start_date', 'sched_end_date', 'sched_start_time', 'sched_end_time',
+            'sched-start-date', 'sched-end-date', 'sched-start-time', 'sched-end-time'
+        ];
         fields.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
@@ -1614,8 +1847,186 @@ $playlists = $db->query("
         render();
     }
 
-    // Inisialisasi Search & Paging untuk ke-3 Tabel
+    /**
+     * Engine Dropdown Search (Mengubah semua elemen <select> menjadi Searchable Dropdown)
+     */
+    function initSearchableDropdowns() {
+        const allSelects = document.querySelectorAll('select');
+
+        allSelects.forEach(select => {
+            if (select.dataset.searchableInit === '1') return;
+            select.dataset.searchableInit = '1';
+
+            // Sembunyikan <select> asli secara aksesibel agar form POST & validasi tetap berfungsi
+            select.classList.add('sselect-native-hidden');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'sselect-wrapper';
+            if (select.id && select.id.startsWith('limit-')) {
+                wrapper.classList.add('sselect-limit');
+            }
+
+            // Tombol Trigger Dropdown
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'sselect-trigger';
+            if (select.title) trigger.title = select.title;
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'sselect-label';
+
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'sselect-arrow';
+            arrowSpan.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+            trigger.appendChild(labelSpan);
+            trigger.appendChild(arrowSpan);
+
+            // Panel Popover Menu + Input Search
+            const menu = document.createElement('div');
+            menu.className = 'sselect-menu';
+
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'sselect-search-wrap';
+            searchWrap.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'sselect-search-input';
+            searchInput.placeholder = 'Cari pilihan...';
+            searchInput.autocomplete = 'off';
+            searchWrap.appendChild(searchInput);
+
+            const optionsList = document.createElement('div');
+            optionsList.className = 'sselect-options';
+
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'sselect-empty';
+            emptyMsg.textContent = 'Pilihan tidak ditemukan';
+
+            menu.appendChild(searchWrap);
+            menu.appendChild(optionsList);
+            menu.appendChild(emptyMsg);
+
+            select.parentNode.insertBefore(wrapper, select);
+            wrapper.appendChild(select);
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(menu);
+
+            function updateTriggerLabel() {
+                const selectedOpt = select.options[select.selectedIndex];
+                labelSpan.textContent = selectedOpt ? selectedOpt.text.trim() : 'Pilih...';
+            }
+
+            function buildOptionItems(filterQuery = '') {
+                optionsList.innerHTML = '';
+                const q = filterQuery.trim().toLowerCase();
+                let visibleCount = 0;
+
+                Array.from(select.options).forEach((opt, idx) => {
+                    const text = opt.text.trim();
+                    if (q !== '' && !text.toLowerCase().includes(q) && !String(opt.value).toLowerCase().includes(q)) {
+                        return;
+                    }
+                    visibleCount++;
+
+                    const item = document.createElement('div');
+                    item.className = 'sselect-option' + (idx === select.selectedIndex ? ' selected' : '');
+                    item.textContent = text;
+                    item.dataset.index = String(idx);
+
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const prevIndex = select.selectedIndex;
+                        select.selectedIndex = idx;
+                        updateTriggerLabel();
+                        closeMenu();
+
+                        if (prevIndex !== idx) {
+                            // Picu event change asli (untuk filter tabel maupun inline onchange="...")
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+
+                    optionsList.appendChild(item);
+                });
+
+                emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+
+            function openMenu() {
+                // Tutup semua dropdown lain yang sedang terbuka
+                document.querySelectorAll('.sselect-wrapper.open').forEach(other => {
+                    if (other !== wrapper) other.classList.remove('open');
+                });
+                wrapper.classList.add('open');
+                searchInput.value = '';
+                buildOptionItems('');
+                setTimeout(() => searchInput.focus(), 15);
+            }
+
+            function closeMenu() {
+                wrapper.classList.remove('open');
+            }
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (wrapper.classList.contains('open')) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            });
+
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+
+            searchInput.addEventListener('input', () => {
+                buildOptionItems(searchInput.value);
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeMenu();
+                    trigger.focus();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const firstVisible = optionsList.querySelector('.sselect-option');
+                    if (firstVisible) {
+                        firstVisible.click();
+                    }
+                }
+            });
+
+            select._refreshSearchable = () => {
+                updateTriggerLabel();
+                buildOptionItems(searchInput.value);
+            };
+
+            updateTriggerLabel();
+        });
+
+        // Klik di luar dropdown akan menutup panel dropdown yang terbuka
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.sselect-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
+    }
+
+    // Inisialisasi Search & Paging untuk ke-4 Tabel serta Searchable Dropdown
     document.addEventListener('DOMContentLoaded', () => {
+        // Pulihkan pilihan terakhir Device TV di Navbar jika ada
+        const navSelect = document.getElementById('navbar-device-select');
+        const savedNavCode = sessionStorage.getItem('ap_navbar_device_code');
+        if (navSelect && savedNavCode) {
+            const exists = Array.from(navSelect.options).some(o => o.value === savedNavCode);
+            if (exists) {
+                navSelect.value = savedNavCode;
+            }
+        }
+        updateNavbarPlayerLinks();
+
+        // Ubah seluruh <select> menjadi Dropdown Search
+        initSearchableDropdowns();
+
         initDataTable({
             tableId: 'table-devices',
             searchId: 'search-devices',
