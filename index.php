@@ -195,6 +195,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 : "Gambar '{$title}' berhasil diunggah ({$duration} detik).";
         }
 
+        // 4b. Edit Durasi Media (Khusus Format Gambar / Image)
+        elseif ($action === 'update_media_duration') {
+            $id = (int) ($_POST['media_id'] ?? 0);
+            $newDuration = max(1, (int) ($_POST['duration'] ?? 10));
+
+            if ($id <= 0) {
+                throw new RuntimeException('ID media tidak valid.');
+            }
+
+            $stmtCheckMedia = $db->prepare("SELECT id, title, type FROM media WHERE id = :id LIMIT 1");
+            $stmtCheckMedia->execute([':id' => $id]);
+            $mediaRow = $stmtCheckMedia->fetch();
+
+            if (!$mediaRow) {
+                throw new RuntimeException('Data media tidak ditemukan.');
+            }
+            if ($mediaRow['type'] !== 'image') {
+                throw new RuntimeException('Durasi video diatur otomatis mengikuti file video dan tidak dapat diubah manual.');
+            }
+
+            $stmtUpdDur = $db->prepare("UPDATE media SET duration = :duration WHERE id = :id AND type = 'image'");
+            $stmtUpdDur->execute([
+                ':duration' => $newDuration,
+                ':id'       => $id,
+            ]);
+
+            $flashMessage = "Durasi gambar '{$mediaRow['title']}' berhasil diubah menjadi {$newDuration} detik.";
+        }
+
         // 5. Hapus Media beserta File Fisiknya
         elseif ($action === 'delete_media') {
             $id = (int) ($_POST['media_id'] ?? 0);
@@ -1463,8 +1492,20 @@ $playlists = $db->query("
                             </td>
                             <td><span class="badge badge-type"><?= htmlspecialchars($m['type']) ?></span></td>
                             <td>
-                                <?= (int) $m['duration'] ?> detik
-                                <?php if ($m['type'] === 'video'): ?>
+                                <?php if ($m['type'] === 'image'): ?>
+                                    <form method="POST" style="display:inline-flex; align-items:center; gap:6px;">
+                                        <input type="hidden" name="action" value="update_media_duration">
+                                        <input type="hidden" name="media_id" value="<?= (int) $m['id'] ?>">
+                                        <input type="number" name="duration" value="<?= (int) $m['duration'] ?>" min="1" max="3600" required
+                                               style="width:70px; padding:4px 8px; font-size:0.82rem; height:30px;"
+                                               title="Ubah durasi tampil gambar (detik)">
+                                        <span style="font-size:0.78rem; color:var(--muted);">dtk</span>
+                                        <button type="submit" class="btn btn-outline" style="padding:4px 9px; font-size:0.76rem; height:30px;" title="Simpan perubahan durasi">
+                                            Simpan
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <?= (int) $m['duration'] ?> detik
                                     <span style="color:#38bdf8; font-size:0.75rem;">(Auto)</span>
                                 <?php endif; ?>
                             </td>
