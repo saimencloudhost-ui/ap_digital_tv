@@ -54,9 +54,31 @@ $db = (new Database())->getConnection();
 $flashMessage = '';
 $flashType = 'success';
 
+// Ambil flash message dari session jika baru selesai upload via AJAX (Progress Bar)
+if (!empty($_SESSION['flash_message'])) {
+    $flashMessage = (string) $_SESSION['flash_message'];
+    $flashType = (string) ($_SESSION['flash_type'] ?? 'success');
+    unset($_SESSION['flash_message'], $_SESSION['flash_type']);
+}
+
 // Tangani form submission (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    $isAjaxUpload = isset($_POST['ajax_upload']) && $_POST['ajax_upload'] === '1';
+
+    // Deteksi jika ukuran total request melebihi post_max_size di php.ini (sehingga $_POST & $_FILES kosong)
+    if ($action === '' && empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && (int) $_SERVER['CONTENT_LENGTH'] > 0) {
+        $maxPost = ini_get('post_max_size');
+        $errMsg = "Ukuran file yang diunggah melebihi batas maksimal server (post_max_size: {$maxPost}).";
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(413);
+            echo json_encode(['status' => 'error', 'message' => $errMsg]);
+            exit;
+        }
+        $flashMessage = $errMsg;
+        $flashType = 'error';
+    }
 
     try {
         // 1. Tambah Device Baru
@@ -110,6 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!isset($_FILES['media_file']) || $_FILES['media_file']['error'] !== UPLOAD_ERR_OK) {
+                $errCode = $_FILES['media_file']['error'] ?? UPLOAD_ERR_NO_FILE;
+                if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+                    $maxUp = ini_get('upload_max_filesize');
+                    throw new RuntimeException("Ukuran file terlalu besar (Melebihi batas upload_max_filesize: {$maxUp}).");
+                }
                 throw new RuntimeException('Silakan pilih file gambar/video yang valid untuk diunggah.');
             }
 
@@ -302,9 +329,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtDelUser->execute([':id' => $userId]);
             $flashMessage = 'User login berhasil dihapus.';
         }
+
+        if ($isAjaxUpload) {
+            $_SESSION['flash_message'] = $flashMessage;
+            $_SESSION['flash_type'] = 'success';
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'status'  => 'success',
+                'message' => $flashMessage,
+            ]);
+            exit;
+        }
     } catch (Throwable $e) {
         $flashMessage = $e->getMessage();
         $flashType = 'error';
+
+        if ($isAjaxUpload) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(400);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => $flashMessage,
+            ]);
+            exit;
+        }
     }
 }
 
@@ -1060,6 +1108,88 @@ $playlists = $db->query("
             font-style: italic;
             display: none;
         }
+
+        /* Loading Progress Bar saat Upload Media */
+        .upload-progress-box {
+            display: none;
+            margin-top: 14px;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+        .upload-progress-box.active {
+            display: block;
+        }
+        .upload-progress-box.error {
+            border-color: rgba(239, 68, 68, 0.55);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .upload-progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+        .upload-status-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #e2e8f0;
+        }
+        .upload-percent-badge {
+            font-family: monospace;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.14);
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+        .upload-progress-track {
+            width: 100%;
+            height: 10px;
+            background: #0f172a;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .upload-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #2dd4bf);
+            border-radius: 999px;
+            transition: width 0.15s ease-out;
+        }
+        .upload-progress-fill.success {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+        }
+        .upload-progress-fill.error {
+            background: #ef4444;
+        }
+        .upload-progress-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.77rem;
+            color: var(--muted);
+        }
+        .upload-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: uploadSpin 0.75s linear infinite;
+            display: inline-block;
+        }
+        @keyframes uploadSpin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1268,6 +1398,25 @@ $playlists = $db->query("
                         <input type="file" name="media_file" id="media_file" accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.mp4,.webm,.ogg" onchange="handleFileSelect(this)" required>
                     </div>
                 </div>
+
+                <!-- Box Loading Progress Upload Media -->
+                <div class="upload-progress-box" id="upload-progress-box">
+                    <div class="upload-progress-header">
+                        <span class="upload-status-text" id="upload-status-text">
+                            <span class="upload-spinner" id="upload-spinner"></span>
+                            <span id="upload-status-label">Mengunggah media ke server...</span>
+                        </span>
+                        <span class="upload-percent-badge" id="upload-percent-text">0%</span>
+                    </div>
+                    <div class="upload-progress-track">
+                        <div class="upload-progress-fill" id="upload-progress-fill"></div>
+                    </div>
+                    <div class="upload-progress-meta">
+                        <span id="upload-size-info">0 MB / 0 MB</span>
+                        <span id="upload-speed-info">Mohon jangan tutup halaman ini</span>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary" id="btn-submit-media">+ Unggah Media</button>
             </form>
 
@@ -2011,6 +2160,134 @@ $playlists = $db->query("
         });
     }
 
+    /**
+     * Format ukuran byte menjadi KB / MB agar mudah dibaca pada Progress Bar Upload
+     */
+    function formatBytes(bytes) {
+        if (!bytes || bytes <= 0) return '0 KB';
+        const mb = bytes / (1024 * 1024);
+        if (mb >= 1) {
+            return mb.toFixed(2) + ' MB';
+        }
+        return (bytes / 1024).toFixed(1) + ' KB';
+    }
+
+    /**
+     * Engine Loading Progress Bar saat proses Upload Media (#form-upload-media)
+     */
+    function initMediaUploadProgress() {
+        const form = document.getElementById('form-upload-media');
+        if (!form) return;
+
+        const progressBox = document.getElementById('upload-progress-box');
+        const statusLabel = document.getElementById('upload-status-label');
+        const spinner = document.getElementById('upload-spinner');
+        const percentText = document.getElementById('upload-percent-text');
+        const progressFill = document.getElementById('upload-progress-fill');
+        const sizeInfo = document.getElementById('upload-size-info');
+        const speedInfo = document.getElementById('upload-speed-info');
+        const btnSubmit = document.getElementById('btn-submit-media');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (!mediaFileInput.files || !mediaFileInput.files[0]) {
+                alert('Silakan pilih file gambar atau video terlebih dahulu.');
+                return;
+            }
+
+            const file = mediaFileInput.files[0];
+            const formData = new FormData(form);
+            formData.append('ajax_upload', '1');
+
+            // Tampilkan box progress & reset ke kondisi awal 0%
+            progressBox.classList.add('active');
+            progressBox.classList.remove('error');
+            progressFill.classList.remove('success', 'error');
+            progressFill.style.width = '0%';
+            percentText.textContent = '0%';
+            spinner.style.display = 'inline-block';
+            statusLabel.textContent = `Mengunggah "${file.name}"...`;
+            sizeInfo.textContent = `0 KB / ${formatBytes(file.size)}`;
+            speedInfo.textContent = 'Mohon tunggu, jangan tutup halaman...';
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = '⏳ Sedang Mengunggah (0%)...';
+
+            const startTime = Date.now();
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', window.location.pathname, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            // Update progress bar secara real-time selama data dikirim ke server
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    const pct = Math.min(100, Math.round((event.loaded / event.total) * 100));
+                    progressFill.style.width = pct + '%';
+                    percentText.textContent = pct + '%';
+                    sizeInfo.textContent = `${formatBytes(event.loaded)} / ${formatBytes(event.total)}`;
+
+                    const elapsedSec = Math.max(0.1, (Date.now() - startTime) / 1000);
+                    const bytesPerSec = event.loaded / elapsedSec;
+                    speedInfo.textContent = `Kecepatan: ${formatBytes(bytesPerSec)}/dtk`;
+
+                    if (pct < 100) {
+                        statusLabel.textContent = `Mengunggah "${file.name}"...`;
+                        btnSubmit.textContent = `⏳ Sedang Mengunggah (${pct}%)...`;
+                    } else {
+                        statusLabel.textContent = '100% Terkirim — Menyimpan & memproses media di server...';
+                        btnSubmit.textContent = '⏳ Memproses di Server...';
+                        speedInfo.textContent = 'Hampir selesai...';
+                    }
+                }
+            };
+
+            xhr.onload = function () {
+                let res = null;
+                try {
+                    res = JSON.parse(xhr.responseText);
+                } catch (_) {}
+
+                if (xhr.status >= 200 && xhr.status < 300 && res && res.status === 'success') {
+                    progressFill.style.width = '100%';
+                    progressFill.classList.add('success');
+                    percentText.textContent = '100%';
+                    spinner.style.display = 'none';
+                    statusLabel.textContent = '✔ ' + (res.message || 'Upload berhasil! Memuat ulang halaman...');
+                    speedInfo.textContent = 'Selesai';
+                    btnSubmit.textContent = '✔ Berhasil Diunggah!';
+
+                    setTimeout(() => {
+                        window.location.href = window.location.pathname;
+                    }, 500);
+                } else {
+                    const errMsg = (res && res.message)
+                        ? res.message
+                        : `Gagal mengunggah media (HTTP ${xhr.status}). Periksa ukuran atau format file.`;
+                    progressBox.classList.add('error');
+                    progressFill.classList.add('error');
+                    spinner.style.display = 'none';
+                    statusLabel.textContent = '✖ ' + errMsg;
+                    speedInfo.textContent = 'Silakan coba lagi';
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = '+ Unggah Media';
+                }
+            };
+
+            xhr.onerror = function () {
+                progressBox.classList.add('error');
+                progressFill.classList.add('error');
+                spinner.style.display = 'none';
+                statusLabel.textContent = '✖ Koneksi terputus saat mengunggah file ke server.';
+                speedInfo.textContent = 'Periksa koneksi internet Anda';
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = '+ Unggah Media';
+            };
+
+            xhr.send(formData);
+        });
+    }
+
     // Inisialisasi Search & Paging untuk ke-4 Tabel serta Searchable Dropdown
     document.addEventListener('DOMContentLoaded', () => {
         // Pulihkan pilihan terakhir Device TV di Navbar jika ada
@@ -2026,6 +2303,9 @@ $playlists = $db->query("
 
         // Ubah seluruh <select> menjadi Dropdown Search
         initSearchableDropdowns();
+
+        // Aktifkan Loading Progress Bar untuk Upload Media
+        initMediaUploadProgress();
 
         initDataTable({
             tableId: 'table-devices',
